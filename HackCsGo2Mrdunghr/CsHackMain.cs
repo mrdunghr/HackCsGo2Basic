@@ -44,6 +44,7 @@ while (true)
 
     if (renderer.triggerBot)
         triggerBot();
+        //triggerBotv2();
 
     if (renderer.antiFlash)
         antiFlash();
@@ -88,6 +89,48 @@ void triggerBot()
             swed.WriteInt(forceAttack, 256); // -attack
         }
     }
+}
+
+void triggerBotv2()
+{
+    // lấy ra entity list và localplayer
+    IntPtr entityList = swed.ReadPointer(client, Offsets.dwEntityList);
+    IntPtr localPlayer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+
+    //get our team and crosshair id
+    int team = swed.ReadInt(Offsets.dwLocalPlayerPawn, Offsets.m_iTeamNum);
+    int entIndex = swed.ReadInt(Offsets.dwLocalPlayerPawn, Offsets.m_iIDEntIndex);
+
+    // print index to console
+    Console.WriteLine($"Crosshair/Entity ID: {entIndex}");
+
+    //if entity in crosshair
+    if(entIndex != 1)
+    {
+        // get controller from entity index
+        IntPtr listEntry = swed.ReadPointer(entityList, 0x8 * ((entIndex & 0x7FFF) >> 9) + 0x10);
+
+        // then get the paw from that controller
+        IntPtr currentPawn = swed.ReadPointer(listEntry, 0x78 * (entIndex & 0x1FF));
+
+        // get entity team
+        int entityTeam = swed.ReadInt(currentPawn, Offsets.m_iTeamNum);
+
+        if(team != entityTeam) // if entity is enemy
+        {
+            if (GetAsyncKeyState(0x02) < 0)
+            {
+                if (entIndex > 0) // nếu thực thể *bất kỳ* nào nằm trong tâm ngắm
+                {
+                    swed.WriteInt(client, Offsets.dwForceAttack, 65537);
+                    Thread.Sleep(10);
+                    swed.WriteInt(client, Offsets.dwForceAttack, 256);
+                    Thread.Sleep(10);
+                }
+            }
+        }
+    }
+    Thread.Sleep(2);
 }
 
 void aimBot()
